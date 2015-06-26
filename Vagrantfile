@@ -13,4 +13,42 @@ Vagrant.configure(2) do |config|
     vb.customize ["modifyvm", :id, "--ioapic", "on"]
     # vb.gui = true
   end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "deb http://debian.opennms.org stable main" > /etc/apt/sources.list.d/opennms.list
+    echo "deb-src http://debian.opennms.org stable main" >> /etc/apt/sources.list.d/opennms.list
+
+    # Add pgp key
+    wget -O - http://debian.opennms.org/OPENNMS-GPG-KEY | apt-key add -
+
+    # overall update
+    apt-get update
+
+    # install stuff
+    apt-get install -y software-properties-common wget git-core
+    apt-get install -y tree zsh tcpdump iftop htop slurm
+
+    # install Oracle Java
+    add-apt-repository ppa:webupd8team/java
+    apt-get update
+    echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
+    echo debconf shared/accepted-oracle-license-v1-1 seen true | /usr/bin/debconf-set-selections
+    apt-get install -y oracle-java8-installer
+
+    # install OpenNMS basic dependencies
+    apt-get install -y maven
+    apt-get install -y jicmp jicmp6
+    apt-get install -y jrrd
+
+    # now the code
+    cd /vagrant
+    if [ -d opennms ]; then
+      git clone https://github.com/OpenNMS/opennms.git
+    fi
+    cd opennms
+    git checkout develop
+    git pull
+    ./clean.pl
+    ./compile.pl
+  SHELL
 end
