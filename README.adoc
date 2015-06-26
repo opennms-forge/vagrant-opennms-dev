@@ -1,0 +1,6 @@
+This project should enable a developer to easily checkout any branch of opennms and build it from scratch.
+
+The main reason for this is to have a independent development environment at hand if you are not able
+to perform any building on your own local machine.
+
+The default M2_HOME is `/vagrant/.m2`
