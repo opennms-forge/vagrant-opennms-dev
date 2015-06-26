@@ -40,11 +40,14 @@ Vagrant.configure(2) do |config|
     apt-get install -y jicmp jicmp6
     apt-get install -y jrrd
 
+    export M2_HOME=/vagrant/.m2
+
     # now the code
     cd /vagrant
     if [ -d opennms ]; then
       git clone https://github.com/OpenNMS/opennms.git
     fi
+
     cd opennms
     git checkout develop
     git pull
