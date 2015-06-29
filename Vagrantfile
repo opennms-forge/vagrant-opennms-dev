@@ -28,6 +28,10 @@ Vagrant.configure(2) do |config|
     apt-get install -y software-properties-common wget git-core
     apt-get install -y tree zsh tcpdump iftop htop slurm
 
+    # install and configure PostgreSQL
+    apt-get install -y postgresql
+    echo "host all  all    0.0.0.0/0  trust" >> /etc/postgresql/9.3/main/pg_hba.conf
+
     # install Oracle Java
     add-apt-repository ppa:webupd8team/java
     apt-get update
@@ -44,7 +48,7 @@ Vagrant.configure(2) do |config|
 
     # now the code
     cd /vagrant
-    if [ -d opennms ]; then
+    if [ ! -d opennms ]; then
       git clone https://github.com/OpenNMS/opennms.git
     fi
 
