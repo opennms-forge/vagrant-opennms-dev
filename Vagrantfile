@@ -9,9 +9,12 @@ Vagrant.configure(2) do |config|
 
   config.vm.provider :virtualbox do |vb|
     vb.name = "Vagrant-OpenNMS"
-    vb.customize ["modifyvm", :id, "--memory", "2048"]
+    vb.customize ["modifyvm", :id, "--memory", "4096"]
     vb.customize ["modifyvm", :id, "--ioapic", "on"]
+    vb.cpus = 4
     # vb.gui = true
+
+    config.vm.synced_folder "~/.m2","/home/vagrant/.m2", type: "rsync", rsync__args: ["--verbose", "--rsync-path='rsync'", "--archive", "--chown=vagrant:vagrant" ]
   end
 
   config.vm.provision "shell", inline: <<-SHELL
@@ -44,18 +47,16 @@ Vagrant.configure(2) do |config|
     apt-get install -y jicmp jicmp6
     apt-get install -y jrrd
 
-    export M2_HOME=/vagrant/.m2
-
     # now the code
     cd /vagrant
     if [ ! -d opennms ]; then
       git clone https://github.com/OpenNMS/opennms.git
     fi
 
-    cd opennms
-    git checkout develop
-    git pull
-    ./clean.pl
-    ./compile.pl
+    #cd opennms
+    #git checkout develop
+    #git pull
+    #./clean.pl
+    #./compile.pl
   SHELL
 end
