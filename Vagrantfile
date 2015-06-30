@@ -2,10 +2,15 @@
 # vi: set ft=ruby :
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "ubuntu/trusty64"
+  # https://atlas.hashicorp.com/reiz/boxes/ubunut_java
+  # Already contains Oracle JDK 8, so we do not have to download it (because it is very slow)
+  config.vm.box = "antapos/ubuntu-trusty64-jdk8-maven"
 
   config.vm.network "forwarded_port", guest: 8980, host: 8980
   config.vm.network "forwarded_port", guest: 8001, host: 8001
+
+  config.vm.synced_folder "~/.m2","/home/vagrant/.m2", owner: "vagrant", group: "vagrant", type: "rsync", rsync__args: ["--verbose", "--rsync-path='rsync'", "--archive"]
+  config.vm.synced_folder "./", "/vagrant", owner: "vagrant", group: "vagrant"
 
   config.vm.provider :virtualbox do |vb|
     vb.name = "Vagrant-OpenNMS"
@@ -13,8 +18,6 @@ Vagrant.configure(2) do |config|
     vb.customize ["modifyvm", :id, "--ioapic", "on"]
     vb.cpus = 4
     # vb.gui = true
-
-    config.vm.synced_folder "~/.m2","/home/vagrant/.m2", type: "rsync", rsync__args: ["--verbose", "--rsync-path='rsync'", "--archive", "--chown=vagrant:vagrant" ]
   end
 
   config.vm.provision "shell", inline: <<-SHELL
@@ -29,34 +32,31 @@ Vagrant.configure(2) do |config|
 
     # install stuff
     apt-get install -y software-properties-common wget git-core
-    apt-get install -y tree zsh tcpdump iftop htop slurm
+    apt-get install -y tree tcpdump iftop htop slurm
+    apt-get install -y zsh
+    apt-get install -y nsis
 
     # install and configure PostgreSQL
     apt-get install -y postgresql
     echo "host all  all    0.0.0.0/0  trust" >> /etc/postgresql/9.3/main/pg_hba.conf
-
-    # install Oracle Java
-    add-apt-repository ppa:webupd8team/java
-    apt-get update
-    echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
-    echo debconf shared/accepted-oracle-license-v1-1 seen true | /usr/bin/debconf-set-selections
-    apt-get install -y oracle-java8-installer
 
     # install OpenNMS basic dependencies
     apt-get install -y maven
     apt-get install -y jicmp jicmp6
     apt-get install -y jrrd
 
-    # now the code
-    cd /vagrant
-    if [ ! -d opennms ]; then
-      git clone https://github.com/OpenNMS/opennms.git
-    fi
+    # fix locales
+    echo 'LC_ALL="en_US.utf8"' >> /etc/environment
+    locale-gen
+    chsh -s /bin/zsh vagrant
 
-    #cd opennms
-    #git checkout develop
-    #git pull
-    #./clean.pl
-    #./compile.pl
+    # delete opennms artifacts from local m2 repository
+    rm -rf /home/vagrant/.m2/org/opennms
+    rm -rf /home/vagrant/.m2/com/opennms
+
+    # now the code
+    if [ ! -d /vagrant/opennms ]; then
+      git clone https://github.com/OpenNMS/opennms.git /vagrant/opennms
+    fi
   SHELL
 end
