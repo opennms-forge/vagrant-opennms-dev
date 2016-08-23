@@ -1,6 +1,77 @@
-This project should enable a developer to easily checkout any branch of opennms and build it from scratch.
+This project defines a `Vagrantfile` to set up a `Virtualbox` virtual machine with all required dependencies to successfully build the latest OpenNMS `develop` branch.
 
-The main reason for this is to have a independent development environment at hand if you are not able
-to perform any building on your own local machine.
+This should enable developers to easily get started without the hassle to worry about setting the environment up.
+It can also serve as a starting point if you want to setup a local development environment.
 
-The default M2_HOME is `/vagrant/.m2`
+== Requirements ==
+
+The following programs must be installed on your system.
+
+  * *Git* The latest version of link:http://git-scm.com[git] must be installed.
+
+  * *Virtualbox* The latest version of link:http://virtualbox.org[Virtualbox] must be installed.
+
+  * *Vagrant* The latest version of link:http://vagrantup.com[Vagrant] must be installed.
+
+  * *Vagrant plugin vagrant-vbguest* The plugin link:https://github.com/dotless-de/vagrant-vbguest[vagrant-vbguest] must be installed.
+
+  * *Ports* 8980, 8101 and 8001 must be available on your host machine. Please make sure no process is occupying these ports.
+
+To verify if your system fulfills the requirements, the following commands should complete successful from your command line
+
+  git version
+  vagrant version
+  VBoxManage -version
+
+In addition `vagrant plugin list` should contain `vagrant-vbguest`
+
+
+== Installation ==
+
+1. Create a working directory
+
+  mkdir -p ~/dev
+
+2. Check out this repository locally
+
+  git clone https://github.com/opennms-forge/vagrant-opennms-dev.git ~/dev/vagrant-opennms-dev
+
+3. Check out the latest opennms code locally
+
+  git clone https://github.com/opennms/opennms.git ~/dev/opennms
+
+4. Optional: Edit `Vagrantfile` and define OpenNMS repository directory to mount
+
+  vi ~/dev/vagrant-opennms-dev/Vagrantfile
+
+5. Spin up the virtual machine
+
+  cd ~/dev/vagrant-opennms-dev
+  vagrant up
+
+6. Verify that everything worked
+
+  vagrant ssh
+
+[NOTE]
+In case you are asked for a username or password.
+The default user is `ubuntu` and the default password is `vagrant`.
+
+7. Compile
+
+  vagrant ssh
+  cd ~/dev/opennms
+  time (./clean.pl && ./compile.pl -DskipTests && ./assemble.pl -DskipTests -p dir)
+
+8. Setup OpenNMS
+
+If the build was successfully, we have to setup OpenNMS
+
+    cd ~/dev/opennms/target/opennms-VERSION/
+    ./bin/runjava -s && sudo ./bin/install -dis
+
+9, Start OpenNMS
+
+  cd ~/dev/opennms/target/opennms-VERSION/
+  sudo ./bin/opennms start # normal mode
+  sudo ./bin/opennms start -t # debug mode

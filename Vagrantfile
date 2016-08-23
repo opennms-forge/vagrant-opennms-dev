@@ -2,39 +2,55 @@
 # vi: set ft=ruby :
 
 Vagrant.configure(2) do |config|
-  # https://atlas.hashicorp.com/reiz/boxes/ubunut_java
-  # Already contains Oracle JDK 8, so we do not have to download it (because it is very slow)
-  config.vm.box = "antapos/ubuntu-trusty64-jdk8-maven"
+  # We use Ubuntu instead of a pre-build image which contains java, as it may
+  # has an outdated java version installed
+  config.vm.box = "ubuntu/xenial64"
 
-  config.vm.network "forwarded_port", guest: 8980, host: 8980
-  config.vm.network "forwarded_port", guest: 8001, host: 8001
+  # Network Configuration
+  config.vm.network "forwarded_port", guest: 8980, host: 8980 # OpenNMS http port
+  config.vm.network "forwarded_port", guest: 8001, host: 8001 # OpenNMS karaf ssh port
+  config.vm.network "forwarded_port", guest: 8101, host: 8101 # OpenNMS remote debug port (if started with -t (debug) option)
 
-#  config.vm.synced_folder "~/.m2","/home/vagrant/.m2", owner: "vagrant", group: "vagrant", type: "rsync", rsync__args: ["--verbose", "--rsync-path='rsync'", "--archive"]
-#  config.vm.synced_folder "./", "/vagrant", owner: "vagrant", group: "vagrant", disabled: true
+  # Shared "opennms repository" folder
+  # This only works, if Virtualbox Guest Additions are installed
+  config.vm.synced_folder "~/dev/opennms", "/home/ubuntu/dev/opennms"
 
+  # Virtualbox Config
   config.vm.provider :virtualbox do |vb|
     vb.name = "Vagrant-OpenNMS-DEV"
     vb.customize ["modifyvm", :id, "--memory", "4096"]
-    vb.customize ["modifyvm", :id, "--ioapic", "on"]
-    vb.cpus = 4
+
+    # we set it to 1 CPU, as sometimes multiple cpus cause problems
+    vb.cpus = 1
     # vb.gui = true
   end
 
+  # Dev Box Provisioning
   config.vm.provision "shell", inline: <<-SHELL
+    # Add OpenNMS repository to allow installation of some dependencies, e.g. jicmp
     echo "deb http://debian.opennms.org stable main" > /etc/apt/sources.list.d/opennms.list
     echo "deb-src http://debian.opennms.org stable main" >> /etc/apt/sources.list.d/opennms.list
 
     # Add pgp key
     wget -O - http://debian.opennms.org/OPENNMS-GPG-KEY | apt-key add -
 
-    # overall update
+    # initialize package manager (otherwise apt-get install may not work)
     apt-get update
 
-    # install stuff
-    apt-get install -y software-properties-common wget git-core
+    # install useful common utils
+    apt-get install -y wget curl
     apt-get install -y tree tcpdump iftop htop slurm screen
-    apt-get install -y zsh
-    apt-get install -y nsis
+
+    # install oh-my-zsh (optional, please uncomment if not desired)
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+
+    # install Oracle JDK 8
+    apt-get install -y software-properties-common
+    add-apt-repository ppa:webupd8team/java
+    apt-get update
+    echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
+    echo debconf shared/accepted-oracle-license-v1-1 seen true | /usr/bin/debconf-set-selections
+    apt-get install -y oracle-java8-installer
 
     # install and configure PostgreSQL
     apt-get install -y postgresql
@@ -48,18 +64,11 @@ Vagrant.configure(2) do |config|
     apt-get install -y jicmp jicmp6
     apt-get install -y jrrd
 
+    # install NSIS (is required by the remote-poller windows installer)
+    apt-get install -y nsis
+
     # fix locales
     echo 'LC_ALL="en_US.utf8"' >> /etc/environment
     locale-gen
-    chsh -s /bin/zsh vagrant
-
-    # delete opennms artifacts from local m2 repository
-    rm -rf /home/vagrant/.m2/org/opennms
-    rm -rf /home/vagrant/.m2/com/opennms
-
-    # now the code
-    if [ ! -d /vagrant/opennms ]; then
-      git clone https://github.com/OpenNMS/opennms.git /vagrant/opennms
-    fi
   SHELL
 end
