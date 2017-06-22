@@ -7,9 +7,9 @@ Vagrant.configure(2) do |config|
   config.vm.box = "ubuntu/xenial64"
 
   # Network Configuration
-  config.vm.network "forwarded_port", guest: 8980, host: 8980 # OpenNMS http port
-  config.vm.network "forwarded_port", guest: 8001, host: 8001 # OpenNMS karaf ssh port
-  config.vm.network "forwarded_port", guest: 8101, host: 8101 # OpenNMS remote debug port (if started with -t (debug) option)
+  config.vm.network "forwarded_port", guest: 8980, host: 58980 # OpenNMS http port
+  config.vm.network "forwarded_port", guest: 8001, host: 58001 # OpenNMS karaf ssh port
+  config.vm.network "forwarded_port", guest: 8101, host: 58101 # OpenNMS remote debug port (if started with -t (debug) option)
 
   # Shared "opennms repository" folder
   # This only works, if Virtualbox Guest Additions are installed
@@ -54,10 +54,10 @@ Vagrant.configure(2) do |config|
 
     # install and configure PostgreSQL
     apt-get install -y postgresql
-    echo "local   all             postgres                                peer" > /etc/postgresql/9.3/main/pg_hba.conf
-    echo "local   all             all                                     peer" >> /etc/postgresql/9.3/main/pg_hba.conf
-    echo "host    all             all             127.0.0.1/32            trust" >> /etc/postgresql/9.3/main/pg_hba.conf
-    echo "host    all             all             ::1/128                 trust" >> /etc/postgresql/9.3/main/pg_hba.conf
+    echo "local   all             postgres                                peer" > /etc/postgresql/9.5/main/pg_hba.conf
+    echo "local   all             all                                     peer" >> /etc/postgresql/9.5/main/pg_hba.conf
+    echo "host    all             all             127.0.0.1/32            trust" >> /etc/postgresql/9.5/main/pg_hba.conf
+    echo "host    all             all             ::1/128                 trust" >> /etc/postgresql/9.5/main/pg_hba.conf
 
     # install OpenNMS basic dependencies
     apt-get install -y maven
